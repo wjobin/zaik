@@ -5,7 +5,9 @@ Main FastAPI application entry point
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
+from pathlib import Path
 from .db import init_db, close_db
 from .llm import close_llm_service, get_llm_service
 from .routes import game
@@ -71,3 +73,11 @@ async def health_check():
         "database": "connected",
         # "llm": llm_status
     }
+
+
+@app.get("/presentation", response_class=HTMLResponse)
+async def presentation():
+    """Hackathon presentation slides"""
+    template_path = Path(__file__).parent / "templates" / "presentation.html"
+    with open(template_path, "r") as f:
+        return f.read()
