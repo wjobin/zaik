@@ -101,6 +101,10 @@ When starting a new task:
 - Implement proper error handling and fallbacks
 - Cache/memoize common responses where appropriate
 - Document all prompts and expected response structures
+- **Scout LLM API:** The project uses Scout as the LLM provider
+  - API Documentation: https://documenter.getpostman.com/view/1922400/2sAYkDPMcb
+  - Configuration: Set `SCOUT_API_URL`, `SCOUT_API_ACCESS_TOKEN`, and `SCOUT_MODEL` in `.env`
+  - Default model: `gpt-5`
 
 ### Getting Started
 

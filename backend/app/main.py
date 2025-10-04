@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from .db import init_db, close_db
+from .llm import close_llm_service, get_llm_service
 
 
 @asynccontextmanager
@@ -16,6 +17,7 @@ async def lifespan(app: FastAPI):
     init_db()
     yield
     # Shutdown
+    await close_llm_service()
     close_db()
 
 
@@ -48,5 +50,12 @@ async def root():
 
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy"}
+    """Health check endpoint with LLM service status"""
+    llm_service = get_llm_service()
+    llm_status = await llm_service.health_check()
+
+    return {
+        "status": "healthy",
+        "database": "connected",
+        "llm": llm_status
+    }
