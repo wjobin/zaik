@@ -13,6 +13,10 @@ from typing import Optional
 
 from ..db import get_db
 from ..services.game_state import GameStateManager
+from ..services.command_parser import CommandParser
+from ..services.command_executor import CommandExecutor
+from ..llm import get_llm_service
+from ..models.adventure import Adventure, Location
 
 
 router = APIRouter(prefix="/api/game", tags=["game"])
@@ -130,29 +134,45 @@ async def send_command(session_id: str, request: CommandRequest):
     the updated game state.
     """
     manager = _get_game_state_manager()
+    db = get_db()
 
     # Verify session exists
     session = manager.get_session(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # TODO: Implement actual command processing with LLM
-    # For now, return a simple echo response
-    message = f"You said: {request.command}"
+    # Get adventure and current location for context
+    from tinydb import Query
+    Adventure_Query = Query()
+    adventures_table = db.table('adventures')
+    adventure_data = adventures_table.get(Adventure_Query.id == session.adventure_id)
 
-    # Handle basic test commands
-    command_lower = request.command.lower()
-    if command_lower in ["inventory", "i"]:
-        if session.inventory:
-            message = f"You are carrying: {', '.join(session.inventory)}"
-        else:
-            message = "You are not carrying anything."
-    elif command_lower in ["look", "l"]:
-        message = f"You are at {session.current_location_id}. (Detailed description coming soon)"
+    if not adventure_data:
+        raise HTTPException(status_code=404, detail="Adventure not found")
+
+    adventure = Adventure(**adventure_data)
+    location_data = adventure.locations.get(session.current_location_id)
+    if not location_data:
+        raise HTTPException(status_code=404, detail="Current location not found")
+
+    location = Location(**location_data) if isinstance(location_data, dict) else location_data
+
+    # Parse the command
+    llm_service = get_llm_service()
+    parser = CommandParser(llm_service)
+    parsed_command = await parser.parse_command(
+        player_input=request.command,
+        location=location,
+        inventory=session.inventory
+    )
+
+    # Execute the command
+    executor = CommandExecutor(db)
+    result = executor.execute(parsed_command, session_id)
 
     return CommandResponse(
-        success=True,
-        message=message,
+        success=result.success,
+        message=result.message,
         state=_format_game_state(session_id)
     )
 
