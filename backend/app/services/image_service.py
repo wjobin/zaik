@@ -96,38 +96,48 @@ class ImageService:
         Returns:
             Filename of the generated image
         """
+        logger.info(f"[IMAGE] Starting image generation for session={session_id}, location={location.id}")
+        logger.info(f"[IMAGE] Storage directory: {self.storage_dir.absolute()}")
+
         # Check if image already exists
         existing_filename = self.get_image_filename(session_id, location.id)
         if existing_filename:
-            logger.info(f"Image already exists for location {location.id}: {existing_filename}")
+            logger.info(f"[IMAGE] Image already exists for location {location.id}: {existing_filename}")
             return existing_filename
 
         # Build detailed prompt for image generation
         prompt = self._build_image_prompt(location)
+        logger.info(f"[IMAGE] Generated prompt: {prompt[:200]}...")
 
         try:
             # Generate image using LLM service
-            logger.info(f"Generating image for location {location.id}")
+            logger.info(f"[IMAGE] Calling LLM service to generate image for location {location.id}")
             base64_image = await self.llm_service.generate_image(
                 prompt=prompt,
                 size="1024x1024",
                 quality="standard"
             )
+            logger.info(f"[IMAGE] Received base64 image data (length: {len(base64_image)})")
 
             # Save image to disk
             filename = self._get_image_filename(session_id, location.id)
             image_path = self._get_image_path(filename)
+            logger.info(f"[IMAGE] Saving image to: {image_path}")
 
             # Decode base64 and save
             image_data = base64.b64decode(base64_image)
+            logger.info(f"[IMAGE] Decoded image data: {len(image_data)} bytes")
+
             with open(image_path, 'wb') as f:
                 f.write(image_data)
 
-            logger.info(f"Image saved: {filename} ({len(image_data)} bytes)")
+            logger.info(f"[IMAGE] ✓ Image saved successfully: {filename} ({len(image_data)} bytes) at {image_path}")
             return filename
 
         except Exception as e:
-            logger.error(f"Failed to generate image for location {location.id}: {e}")
+            logger.error(f"[IMAGE] ✗ Failed to generate image for location {location.id}: {type(e).__name__}: {str(e)}")
+            import traceback
+            logger.error(f"[IMAGE] Traceback: {traceback.format_exc()}")
             raise
 
     def _build_image_prompt(self, location: Location) -> str:
