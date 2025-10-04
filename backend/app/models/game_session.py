@@ -57,6 +57,15 @@ class GameSession(BaseModel):
         )
     )
 
+    # Location images
+    location_images: Dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Generated images for each location, keyed by location_id. "
+            "Values are image filenames stored on the server."
+        )
+    )
+
     # Global game state
     global_flags: Dict[str, bool] = Field(
         default_factory=dict,

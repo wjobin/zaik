@@ -5,9 +5,11 @@ Provides endpoints for:
 - Creating new game sessions
 - Sending player commands
 - Getting current game state
+- Serving location images
 """
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import Optional
 
@@ -15,6 +17,7 @@ from ..db import get_db
 from ..services.game_state import GameStateManager
 from ..services.command_parser import CommandParser
 from ..services.command_executor import CommandExecutor
+from ..services.image_service import get_image_service
 from ..llm import get_llm_service
 from ..models.adventure import Adventure, Location
 
@@ -42,6 +45,7 @@ class GameStateResponse(BaseModel):
     inventory: list[str]
     visited_locations: list[str]
     message: str
+    image_url: Optional[str] = None
 
 
 class CommandResponse(BaseModel):
@@ -74,12 +78,17 @@ def _format_game_state(session_id: str) -> GameStateResponse:
     adventures_table = db.table('adventures')
     adventure = adventures_table.get(Adventure.id == session.adventure_id)
 
+    image_url = None
     if not adventure:
         message = f"You are at location: {session.current_location_id}"
     else:
         location = adventure['locations'].get(session.current_location_id)
         if location:
             message = f"{location['name']}\n\n{location['description']}"
+            # Check if image exists for this location
+            if session.current_location_id in session.location_images:
+                image_filename = session.location_images[session.current_location_id]
+                image_url = f"/api/game/images/{image_filename}"
         else:
             message = f"You are at location: {session.current_location_id}"
 
@@ -88,7 +97,8 @@ def _format_game_state(session_id: str) -> GameStateResponse:
         current_location_id=session.current_location_id,
         inventory=session.inventory,
         visited_locations=list(session.visited_locations),
-        message=message
+        message=message,
+        image_url=image_url
     )
 
 
@@ -107,20 +117,37 @@ async def new_game(request: NewGameRequest):
 
     # Look up the adventure
     from tinydb import Query
-    Adventure = Query()
+    Adventure_Query = Query()
     adventures_table = db.table('adventures')
-    adventure = adventures_table.get(Adventure.id == request.adventure_id)
+    adventure_data = adventures_table.get(Adventure_Query.id == request.adventure_id)
 
-    if not adventure:
+    if not adventure_data:
         raise HTTPException(status_code=404, detail=f"Adventure '{request.adventure_id}' not found")
 
-    starting_location = adventure['starting_location_id']
+    starting_location_id = adventure_data['starting_location_id']
 
     session = manager.create_session(
         adventure_id=request.adventure_id,
-        starting_location_id=starting_location,
+        starting_location_id=starting_location_id,
         player_name=request.player_name
     )
+
+    # Generate image for starting location
+    try:
+        adventure = Adventure(**adventure_data)
+        location_data = adventure.locations.get(starting_location_id)
+        if location_data:
+            location = Location(**location_data) if isinstance(location_data, dict) else location_data
+            image_service = get_image_service()
+            image_filename = await image_service.generate_location_image(session.id, location)
+
+            # Update session with image filename
+            session.location_images[starting_location_id] = image_filename
+            manager.save_session(session)
+    except Exception as e:
+        # Log but don't fail if image generation fails
+        import logging
+        logging.error(f"Failed to generate starting location image: {e}")
 
     return _format_game_state(session.id)
 
@@ -166,9 +193,30 @@ async def send_command(session_id: str, request: CommandRequest):
         inventory=session.inventory
     )
 
+    # Store old location for comparison
+    old_location_id = session.current_location_id
+
     # Execute the command
     executor = CommandExecutor(db)
     result = executor.execute(parsed_command, session_id)
+
+    # If command was successful and player moved, generate image for new location
+    updated_session = manager.get_session(session_id)
+    if updated_session and result.success and updated_session.current_location_id != old_location_id:
+        try:
+            new_location_data = adventure.locations.get(updated_session.current_location_id)
+            if new_location_data:
+                new_location = Location(**new_location_data) if isinstance(new_location_data, dict) else new_location_data
+                image_service = get_image_service()
+                image_filename = await image_service.generate_location_image(updated_session.id, new_location)
+
+                # Update session with new image
+                updated_session.location_images[updated_session.current_location_id] = image_filename
+                manager.save_session(updated_session)
+        except Exception as e:
+            # Log but don't fail if image generation fails
+            import logging
+            logging.error(f"Failed to generate location image: {e}")
 
     return CommandResponse(
         success=result.success,
@@ -204,3 +252,19 @@ async def delete_game(session_id: str):
 
     manager.delete_session(session_id)
     return {"message": "Session deleted successfully"}
+
+
+@router.get("/images/{image_filename}")
+async def get_image(image_filename: str):
+    """
+    Serve a location image.
+
+    Returns the image file for display in the game.
+    """
+    image_service = get_image_service()
+    image_data = image_service.read_image(image_filename)
+
+    if not image_data:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    return Response(content=image_data, media_type="image/png")
