@@ -4,7 +4,11 @@
 
 **Zaik** is a modern text-based adventure game inspired by Zork, leveraging Large Language Models (LLMs) to create dynamic, natural language interactions. The name "Zaik" combines "Zork" with "AI" to reflect its AI-powered gameplay.
 
-**Notion Project Page:** https://www.notion.so/Zaik-282c637cdfdb8029b1ccd2373c1878d7
+**Notion Resources:**
+- **Project Page:** https://www.notion.so/Zaik-282c637cdfdb8029b1ccd2373c1878d7
+  - Page ID: `282c637cdfdb8029b1ccd2373c1878d7`
+- **Feature Backlog Database:** https://www.notion.so/282c637cdfdb8176a122c63fb188f4b3
+  - Database ID: `282c637cdfdb8176a122c63fb188f4b3`
 
 ## Architecture
 
@@ -40,7 +44,8 @@ The project uses a Notion Kanban board with the following columns:
 When starting a new task:
 
 1. **Check the Notion board** for the next highest-priority task in "To Do"
-   - Use `mcp__mcp-toolkit-gateway__API-post-search` to search for tasks
+   - Query the Feature Backlog Database directly using database ID `282c637cdfdb8176a122c63fb188f4b3`
+   - Use `mcp__mcp-toolkit-gateway__API-post-database-query` with filters for Status and Priority
 2. **Move the task to "In Progress"** when you begin work
    - Use `mcp__mcp-toolkit-gateway__API-patch-page` to update the task status
    - **REQUIRED:** You MUST use Notion MCP tools to update task status. If the tools fail or are unavailable, stop and report the error.
