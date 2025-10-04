@@ -40,11 +40,20 @@ The project uses a Notion Kanban board with the following columns:
 When starting a new task:
 
 1. **Check the Notion board** for the next highest-priority task in "To Do"
+   - Use `mcp__mcp-toolkit-gateway__API-post-search` to search for tasks
 2. **Move the task to "In Progress"** when you begin work
+   - Use `mcp__mcp-toolkit-gateway__API-patch-page` to update the task status
+   - **REQUIRED:** You MUST use Notion MCP tools to update task status. If the tools fail or are unavailable, stop and report the error.
 3. **Read the full task description** if available by clicking into the task
+   - Use `mcp__mcp-toolkit-gateway__API-retrieve-a-page` to get full task details
 4. **Complete the work** following the development principles below
-5. **Move the task to "Done"** when finished and tested
-6. **Update any related tasks** that may be unblocked
+5. **Commit and push your changes** when the work is complete
+   - Create a descriptive commit message following the git commit format
+   - Push to GitHub using `git push`
+6. **Move the task to "Done"** when finished and tested
+   - Use `mcp__mcp-toolkit-gateway__API-patch-page` to update status to "Done"
+   - **REQUIRED:** You MUST update the Notion task status or fail. Do not proceed without confirming the update succeeded.
+7. **Update any related tasks** that may be unblocked
 
 ### Development Principles
 
