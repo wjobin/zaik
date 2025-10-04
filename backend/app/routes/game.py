@@ -63,8 +63,21 @@ def _format_game_state(session_id: str) -> GameStateResponse:
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # TODO: Get location description from adventure data
-    message = f"You are at location: {session.current_location_id}"
+    # Get location description from adventure data
+    db = get_db()
+    from tinydb import Query
+    Adventure = Query()
+    adventures_table = db.table('adventures')
+    adventure = adventures_table.get(Adventure.id == session.adventure_id)
+
+    if not adventure:
+        message = f"You are at location: {session.current_location_id}"
+    else:
+        location = adventure['locations'].get(session.current_location_id)
+        if location:
+            message = f"{location['name']}\n\n{location['description']}"
+        else:
+            message = f"You are at location: {session.current_location_id}"
 
     return GameStateResponse(
         session_id=session.id,
@@ -86,10 +99,18 @@ async def new_game(request: NewGameRequest):
     the initial game state.
     """
     manager = _get_game_state_manager()
+    db = get_db()
 
-    # TODO: Look up adventure's starting location
-    # For now, use hardcoded starting location
-    starting_location = "start"
+    # Look up the adventure
+    from tinydb import Query
+    Adventure = Query()
+    adventures_table = db.table('adventures')
+    adventure = adventures_table.get(Adventure.id == request.adventure_id)
+
+    if not adventure:
+        raise HTTPException(status_code=404, detail=f"Adventure '{request.adventure_id}' not found")
+
+    starting_location = adventure['starting_location_id']
 
     session = manager.create_session(
         adventure_id=request.adventure_id,
