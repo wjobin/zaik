@@ -30,9 +30,8 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
-      - ./backend/.env:/app/.env
-    environment:
-      - DEBUG=True
+    env_file:
+      - ./backend/.env
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]

@@ -16,6 +16,14 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager - handles startup and shutdown."""
     # Startup
     init_db()
+
+    # Run migrations
+    from .migrations.manager import MigrationManager
+    from .db import get_db
+    manager = MigrationManager(get_db())
+    manager.load_migration_files()
+    manager.migrate()
+
     yield
     # Shutdown
     await close_llm_service()

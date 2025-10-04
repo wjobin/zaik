@@ -5,11 +5,17 @@ Provides interface for interacting with the Scout LLM service
 
 import os
 import httpx
+import logging
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-load_dotenv()
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Load .env file - check both /app/.env (Docker) and local .env
+load_dotenv("/app/.env")
+load_dotenv()  # Fallback to default behavior
 
 
 class LLMMessage(BaseModel):
@@ -35,6 +41,12 @@ class ScoutLLMService:
 
     def __init__(self, config: Optional[LLMConfig] = None):
         self.config = config or LLMConfig()
+        logger.info(f"Initializing Scout LLM Service")
+        logger.info(f"API URL: {self.config.api_url}")
+        logger.info(f"Model: {self.config.model}")
+        logger.info(f"Token configured: {bool(self.config.access_token)}")
+        logger.info(f"Token length: {len(self.config.access_token) if self.config.access_token else 0}")
+
         self.client = httpx.AsyncClient(
             timeout=30.0,
             headers={
@@ -121,16 +133,33 @@ class ScoutLLMService:
             payload["max_tokens"] = max_tokens
 
         try:
-            response = await self.client.post(
-                f"{self.config.api_url}/chat/completions",
-                json=payload
-            )
+            # Scout API endpoint (singular 'completion' not 'completions')
+            url = f"{self.config.api_url}/api/chat/completion"
+            print(f">>> LLM Request: POST {url}")
+            print(f">>> LLM Payload: {payload}")
+
+            response = await self.client.post(url, json=payload)
+
+            print(f">>> LLM Response Status: {response.status_code}")
+            print(f">>> LLM Response Headers: {dict(response.headers)}")
+
+            response_text = response.text
+            print(f">>> LLM Response Body Length: {len(response_text)}")
+            print(f">>> LLM Response Body: {response_text[:1000]}")  # First 1000 chars
+
             response.raise_for_status()
+
+            if not response_text:
+                raise Exception("Empty response body from Scout LLM API")
+
             return response.json()
 
         except httpx.HTTPStatusError as e:
+            logger.error(f"LLM HTTP Error: Status {e.response.status_code}")
+            logger.error(f"LLM Error Response: {e.response.text}")
             raise Exception(f"Scout LLM API error: {e.response.status_code} - {e.response.text}")
         except Exception as e:
+            logger.error(f"LLM Request Failed: {type(e).__name__}: {str(e)}")
             raise Exception(f"Failed to complete chat request: {str(e)}")
 
     async def generate_text(
@@ -166,9 +195,16 @@ class ScoutLLMService:
         )
 
         # Extract the generated text from response
-        # This structure may need adjustment based on actual Scout API response format
+        # Scout API uses "messages" array, not "choices" like OpenAI
         try:
-            return response["choices"][0]["message"]["content"]
+            # Scout API format: {"messages": [{"content": "...", "role": "assistant"}]}
+            if "messages" in response and len(response["messages"]) > 0:
+                return response["messages"][0]["content"]
+            # Fallback to OpenAI format if needed
+            elif "choices" in response and len(response["choices"]) > 0:
+                return response["choices"][0]["message"]["content"]
+            else:
+                raise Exception(f"Unexpected response structure: {response}")
         except (KeyError, IndexError) as e:
             raise Exception(f"Unexpected response format from Scout LLM: {e}")
 

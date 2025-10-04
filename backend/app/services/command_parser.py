@@ -7,10 +7,13 @@ Includes fallback pattern matching for when LLM is unavailable.
 
 import json
 import re
+import logging
 from typing import Optional, Dict, Any
 from ..models.commands import GameCommand, CommandType
 from ..models.adventure import Location
 from ..llm import ScoutLLMService, LLMMessage
+
+logger = logging.getLogger(__name__)
 
 
 class CommandParser:
@@ -127,11 +130,15 @@ Examples:
         # Try LLM parsing first if available
         if self.llm_service and self.llm_service.config.is_configured():
             try:
+                logger.info(f"Attempting LLM parse for: '{player_input}'")
                 return await self._parse_with_llm(player_input, location, inventory)
             except Exception as e:
-                print(f"LLM parsing failed: {e}, falling back to pattern matching")
+                logger.error(f"LLM parsing failed: {type(e).__name__}: {e}")
+                logger.exception("Full LLM parsing exception:")
+                logger.warning("Falling back to pattern matching")
 
         # Fallback to pattern matching
+        logger.info("Using pattern matching for command parsing")
         return self._parse_with_patterns(player_input, location, inventory)
 
     async def _parse_with_llm(

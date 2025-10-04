@@ -49,7 +49,7 @@ export default function GameTerminal() {
       const response = await fetch(`${API_BASE}/api/game/new`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adventure_id: 'default' })
+        body: JSON.stringify({ adventure_id: 'halloween_2025' })
       })
 
       if (!response.ok) {
