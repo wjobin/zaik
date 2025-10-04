@@ -217,12 +217,6 @@ class ScoutLLMService:
         max_wait_time: int = 60
     ) -> str:
         """
-        NOTE: Scout image generation API currently not fully supported via async job pattern.
-        The /protected/ endpoints require browser authentication and /api/async_jobs endpoints
-        are not publicly documented. This method will raise an exception until we have proper
-        API documentation or webhook support.
-        """
-        """
         Generate an image using Scout's image generation API (async job pattern)
 
         Args:
@@ -239,9 +233,7 @@ class ScoutLLMService:
             raise ValueError("Scout LLM API is not configured")
 
         payload = {
-            "prompt": prompt,
-            "aspect_ratio": "landscape",
-            "model": "black-forest-labs/flux-schnell"
+            "prompt": prompt
         }
 
         try:
@@ -259,22 +251,8 @@ class ScoutLLMService:
             if "run_protected_url" not in result:
                 raise Exception(f"No job URL in response: {result}")
 
-            # Convert protected URL to API URL
-            # /protected/async_jobs/{id}/run.json -> /api/async_jobs/{id}
-            protected_url = result['run_protected_url']
-            logger.info(f"Received protected URL: {protected_url}")
-
-            # Try to extract job ID and use API endpoint instead
-            import re
-            match = re.search(r'/async_jobs/([^/]+)', protected_url)
-            if match:
-                job_id = match.group(1)
-                job_url = f"{self.config.api_url}/api/async_jobs/{job_id}"
-                logger.info(f"Converted to API URL: {job_url}")
-            else:
-                # Fallback to protected URL (may not work)
-                job_url = f"{self.config.api_url}{protected_url}"
-                logger.warning(f"Could not extract job ID, using protected URL: {job_url}")
+            job_url = f"{self.config.api_url}{result['run_protected_url']}"
+            logger.info(f"Image generation job submitted: {job_url}")
 
             # Step 2: Poll the job until completion
             import asyncio
@@ -286,19 +264,7 @@ class ScoutLLMService:
                 await asyncio.sleep(poll_interval)
 
                 job_response = await self.client.get(job_url)
-                logger.info(f"Job poll response status: {job_response.status_code}")
-                logger.info(f"Job poll response headers: {dict(job_response.headers)}")
-                logger.info(f"Job poll response body (first 500 chars): {job_response.text[:500]}")
-
                 job_response.raise_for_status()
-
-                # Check content type before parsing JSON
-                content_type = job_response.headers.get('content-type', '')
-                if 'application/json' not in content_type:
-                    logger.error(f"Unexpected content type: {content_type}")
-                    logger.error(f"Response body: {job_response.text[:1000]}")
-                    raise Exception(f"Job endpoint returned non-JSON response (content-type: {content_type})")
-
                 job_data = job_response.json()
 
                 logger.info(f"Job status: {job_data.get('status', 'unknown')}")
