@@ -80,9 +80,9 @@ class GameSession(BaseModel):
         description="When this session was last played"
     )
 
-    class Config:
-        """Pydantic configuration."""
-        json_encoders = {
+    model_config = {
+        "json_encoders": {
             datetime: lambda v: v.isoformat(),
             set: lambda v: list(v),  # Serialize sets as lists for JSON
         }
+    }
