@@ -1,19 +1,100 @@
-# React + TypeScript + Vite
+# Zaik Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React-based frontend for the Zaik text-based adventure game. Built with React, TypeScript, and Vite.
 
-Currently, two official plugins are available:
+## Getting Started
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Prerequisites
 
-## React Compiler
+- Node.js 18+ (or use mise: `mise use node@lts`)
+- npm
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Installation
 
-## Expanding the ESLint configuration
+```bash
+npm install
+```
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Development
+
+Run the development server with hot module reloading:
+
+```bash
+npm run dev
+```
+
+The app will be available at `http://localhost:5173`
+
+### Build
+
+Create a production build:
+
+```bash
+npm run build
+```
+
+Preview the production build:
+
+```bash
+npm run preview
+```
+
+### Linting
+
+Run ESLint to check code quality:
+
+```bash
+npm run lint
+```
+
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── App.tsx          # Main application component
+│   ├── main.tsx         # Application entry point
+│   ├── assets/          # Static assets (images, icons)
+│   └── *.css            # Styles
+├── public/              # Public static files
+├── index.html           # HTML template
+└── vite.config.ts       # Vite configuration
+```
+
+## Technology Stack
+
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Fast build tool with HMR
+- **ESLint** - Code linting
+
+## Development Notes
+
+### Architecture Principles
+
+- Keep UI state separate from game state
+- Game state should be managed by the backend
+- UI components should be presentational where possible
+- Use React hooks for local state management
+
+### Backend Integration
+
+The frontend will communicate with the FastAPI backend running on `http://localhost:8000`. API endpoints will be added as game features are implemented.
+
+### Terminal-like Interface
+
+The UI is designed to provide a terminal-like text interface for the adventure game, mimicking classic text adventures like Zork.
+
+## Vite + React + TypeScript
+
+This template uses:
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) - Uses Babel for Fast Refresh
+- TypeScript for type safety
+- ESLint for code quality
+
+### Expanding the ESLint Configuration
+
+For production applications, consider enabling type-aware lint rules:
 
 ```js
 export default defineConfig([
@@ -21,53 +102,23 @@ export default defineConfig([
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
       tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
+      // Or stricter: tseslint.configs.strictTypeChecked,
     ],
     languageOptions: {
       parserOptions: {
         project: ['./tsconfig.node.json', './tsconfig.app.json'],
         tsconfigRootDir: import.meta.dirname,
       },
-      // other options...
     },
   },
 ])
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Contributing
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Follow the development workflow in the main project [CLAUDE.md](../CLAUDE.md):
+1. Check the Notion board for tasks
+2. Move tasks to "In Progress" when starting
+3. Commit and push changes when complete
+4. Move tasks to "Done" when finished
