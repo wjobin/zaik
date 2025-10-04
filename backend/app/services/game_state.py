@@ -90,6 +90,10 @@ class GameStateManager:
         session_dict = session.model_dump()
         # Convert set to list for JSON serialization
         session_dict['visited_locations'] = list(session_dict['visited_locations'])
+        # Convert datetime objects to ISO strings for JSON serialization
+        session_dict['created_at'] = session_dict['created_at'].isoformat()
+        session_dict['updated_at'] = session_dict['updated_at'].isoformat()
+        session_dict['last_played_at'] = session_dict['last_played_at'].isoformat()
 
         # Upsert: update if exists, insert if new
         self.sessions.upsert(session_dict, self._query.id == session.id)

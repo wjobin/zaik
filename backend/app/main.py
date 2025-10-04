@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from .db import init_db, close_db
 from .llm import close_llm_service, get_llm_service
+from .routes import game
 
 
 @asynccontextmanager
@@ -31,11 +32,14 @@ app = FastAPI(
 # Configure CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React default port
+    allow_origins=["http://localhost:5173"],  # Vite default port
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routes
+app.include_router(game.router)
 
 
 @app.get("/")
@@ -51,11 +55,11 @@ async def root():
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint with LLM service status"""
-    llm_service = get_llm_service()
-    llm_status = await llm_service.health_check()
+    # llm_service = get_llm_service()
+    # llm_status = await llm_service.health_check()
 
     return {
         "status": "healthy",
         "database": "connected",
-        "llm": llm_status
+        # "llm": llm_status
     }
