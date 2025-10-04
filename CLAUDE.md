@@ -66,6 +66,15 @@ When starting a new task:
 2. **Keep game logic separate from UI and LLM concerns** - Maintain clean architecture
 3. **Use type hints and clear interfaces between components** - Ensure maintainability
 4. **Document LLM prompts and expected response formats** - Critical for consistency
+5. **ALWAYS write tests for services** - Every service must have corresponding tests in `backend/tests/`
+   - Test files should be named `test_<service_name>.py`
+   - Include unit tests, edge cases, and integration tests
+   - Run tests before committing: `mise exec -- pytest tests/ -v`
+6. **ALWAYS use mise and uv for Python tooling** - Never use system-wide Python or pip directly
+   - Python operations: `mise exec -- python <command>`
+   - Install dependencies: `mise exec -- uv pip install <package>`
+   - Run tests: `mise exec -- pytest tests/`
+   - This ensures consistent Python version and dependency management
 
 ### Terminology
 
@@ -73,6 +82,52 @@ When starting a new task:
 - Use **"Location graph"** to refer to the connected network of locations
 - Use **"natural language parsing"** for converting player input to game commands
 - Use **"dynamic description generation"** for LLM-enhanced text output
+
+### Python Development Environment
+
+**ALWAYS use mise and uv - NEVER use system Python or direct pip!**
+
+This project uses `mise` for version management and `uv` for fast, reliable dependency management.
+
+**Common commands:**
+```bash
+# Run Python scripts
+mise exec -- python script.py
+
+# Install dependencies
+mise exec -- uv pip install package-name
+
+# Install dev dependencies
+mise exec -- uv pip install pytest pytest-asyncio
+
+# Run tests
+mise exec -- pytest tests/ -v
+
+# Run specific test file
+mise exec -- pytest tests/test_service.py -v
+
+# Start development server
+mise exec -- uvicorn app.main:app --reload --port 8000
+
+# Run migrations
+mise exec -- python -m app.cli migrate
+```
+
+**Why mise and uv?**
+- Ensures consistent Python version across all environments
+- `uv` is 10-100x faster than pip
+- Avoids conflicts with system Python packages
+- Reproducible builds and deployments
+
+**NEVER do this:**
+- ❌ `python script.py`
+- ❌ `pip install package`
+- ❌ `pytest tests/`
+
+**ALWAYS do this:**
+- ✅ `mise exec -- python script.py`
+- ✅ `mise exec -- uv pip install package`
+- ✅ `mise exec -- pytest tests/`
 
 ### Key Technical Decisions
 
@@ -121,10 +176,35 @@ After these foundation tasks, you can work on LLM integration, UI implementation
 
 ### Testing Strategy
 
-- Write unit tests for core game logic
-- Test LLM integration with mock responses
-- Create integration tests for the full game loop
-- Manual playtest each location and interaction
+**CRITICAL: Tests must be written for ALL services before committing!**
+
+- **Write tests FIRST or IMMEDIATELY after creating services** - No exceptions
+- Use pytest with in-memory TinyDB for fast, isolated tests
+- Test file location: `backend/tests/test_<service_name>.py`
+- Required test coverage:
+  - Unit tests for all public methods
+  - Edge cases (empty inputs, invalid data, missing resources)
+  - Error handling (invalid sessions, nonexistent items, etc.)
+  - Integration tests showing full workflows
+- Test LLM integration with mock responses using `unittest.mock.AsyncMock`
+- Run tests before every commit: `mise exec -- pytest tests/ -v`
+- All tests must pass before pushing code
+
+**Example test structure:**
+```python
+# tests/test_my_service.py
+import pytest
+from tinydb import TinyDB
+from tinydb.storages import MemoryStorage
+
+@pytest.fixture
+def db():
+    return TinyDB(storage=MemoryStorage)
+
+def test_feature_name(db):
+    # Arrange, Act, Assert
+    pass
+```
 
 ### Documentation
 
