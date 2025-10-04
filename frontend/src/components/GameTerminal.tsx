@@ -3,8 +3,7 @@ import './GameTerminal.css'
 
 interface GameMessage {
   text: string
-  type: 'output' | 'input' | 'error' | 'image'
-  imageUrl?: string
+  type: 'output' | 'input' | 'error'
 }
 
 interface GameState {
@@ -13,7 +12,6 @@ interface GameState {
   inventory: string[]
   visited_locations: string[]
   message: string
-  image_url?: string
 }
 
 const API_BASE = 'http://localhost:8000'
@@ -41,8 +39,8 @@ export default function GameTerminal() {
     startNewGame()
   }, [])
 
-  const addMessage = (text: string, type: GameMessage['type'] = 'output', imageUrl?: string) => {
-    setMessages(prev => [...prev, { text, type, imageUrl }])
+  const addMessage = (text: string, type: GameMessage['type'] = 'output') => {
+    setMessages(prev => [...prev, { text, type }])
   }
 
   const startNewGame = async () => {
@@ -64,9 +62,6 @@ export default function GameTerminal() {
       addMessage('=== Welcome to Zaik ===')
       addMessage('A text adventure powered by AI')
       addMessage('')
-      if (state.image_url) {
-        addMessage('', 'image', `${API_BASE}${state.image_url}`)
-      }
       addMessage(state.message)
     } catch (error) {
       addMessage('Error: Failed to start game. Is the backend running?', 'error')
@@ -97,17 +92,12 @@ export default function GameTerminal() {
 
       const result = await response.json()
       addMessage('')
-      if (result.state.image_url) {
-        addMessage('', 'image', `${API_BASE}${result.state.image_url}`)
-      }
       addMessage(result.message)
     } catch (error) {
       addMessage('Error: Failed to send command', 'error')
       console.error(error)
     } finally {
       setIsLoading(false)
-      // Re-focus the input field after command is processed
-      inputRef.current?.focus()
     }
   }
 
@@ -127,16 +117,7 @@ export default function GameTerminal() {
       <div className="terminal-output">
         {messages.map((msg, idx) => (
           <div key={idx} className={`terminal-line terminal-${msg.type}`}>
-            {msg.type === 'image' && msg.imageUrl ? (
-              <img
-                src={msg.imageUrl}
-                alt="Location"
-                className="location-image"
-                style={{ maxWidth: '100%', height: 'auto', margin: '10px 0', borderRadius: '4px' }}
-              />
-            ) : (
-              msg.text
-            )}
+            {msg.text}
           </div>
         ))}
         {isLoading && (
