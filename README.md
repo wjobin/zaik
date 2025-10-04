@@ -33,16 +33,59 @@ zaik/
 
 ### Using Docker (Recommended)
 
+Start the entire game stack (frontend + backend) with one command:
+
 ```bash
-# Start all services
+# Start all services in development mode
 docker compose up
+
+# Or run in detached mode
+docker compose up -d
 ```
 
-The backend API will be available at http://localhost:8000
+Access the services:
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:8000
+- **API Docs:** http://localhost:8000/docs
+
+Stop services:
+```bash
+docker compose down
+```
+
+### Production Build
+
+For production deployment:
+
+```bash
+# Build and run production containers
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Production URLs:
+- **Frontend:** http://localhost:80
+- **Backend API:** http://localhost:8000
 
 ### Local Development
 
-See [backend/README.md](backend/README.md) for detailed setup instructions using mise + uv.
+For local development without Docker:
+
+**Backend:**
+```bash
+cd backend
+mise install
+source venv/bin/activate
+python -m uvicorn app.main:app --reload
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for detailed setup instructions.
 
 ## Getting Started
 

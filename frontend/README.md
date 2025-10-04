@@ -4,18 +4,31 @@ React-based frontend for the Zaik text-based adventure game. Built with React, T
 
 ## Getting Started
 
-### Prerequisites
+### Using Docker (Recommended)
+
+The easiest way to run the frontend is with Docker Compose from the project root:
+
+```bash
+# From project root - starts both frontend and backend
+docker compose up
+
+# Frontend will be available at http://localhost:5173
+```
+
+### Local Development
+
+#### Prerequisites
 
 - Node.js 18+ (or use mise: `mise use node@lts`)
 - npm
 
-### Installation
+#### Installation
 
 ```bash
 npm install
 ```
 
-### Development
+#### Development
 
 Run the development server with hot module reloading:
 
@@ -25,7 +38,7 @@ npm run dev
 
 The app will be available at `http://localhost:5173`
 
-### Build
+#### Build
 
 Create a production build:
 
@@ -39,12 +52,26 @@ Preview the production build:
 npm run preview
 ```
 
-### Linting
+#### Linting
 
 Run ESLint to check code quality:
 
 ```bash
 npm run lint
+```
+
+### Docker Commands
+
+Build and run the frontend independently:
+
+```bash
+# Development build (with hot reloading)
+docker build -f Dockerfile.dev -t zaik-frontend:dev .
+docker run -p 5173:5173 -v $(pwd)/src:/app/src zaik-frontend:dev
+
+# Production build (with nginx)
+docker build -f Dockerfile -t zaik-frontend:prod .
+docker run -p 80:80 zaik-frontend:prod
 ```
 
 ## Project Structure
