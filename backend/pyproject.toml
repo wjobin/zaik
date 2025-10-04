@@ -1,0 +1,22 @@
+[project]
+name = "zaik-backend"
+version = "0.1.0"
+description = "Backend API for Zaik text adventure game"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi==0.115.0",
+    "uvicorn[standard]==0.32.0",
+    "pydantic==2.9.2",
+    "python-dotenv==1.0.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "httpx>=0.27.0",
+]

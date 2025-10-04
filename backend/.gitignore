@@ -26,6 +26,10 @@ wheels/
 # Environment
 .env
 .venv
+venv/
+
+# Old pip-based files (now using uv)
+requirements.txt
 
 # IDE
 .vscode/
